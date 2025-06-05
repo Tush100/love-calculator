@@ -2,9 +2,11 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Heart, Mail } from "lucide-react"
+import { Heart, Mail, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Button } from "@/components/ui/button"
 
 export function NavBar() {
   const pathname = usePathname()
@@ -38,7 +40,38 @@ export function NavBar() {
             Contact Me
           </Link>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 px-2">
+                Features <ChevronDown className="h-4 w-4 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem>
+                <Link href="/#horoscope" className="w-full">
+                  Love Horoscope
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Link href="/#timeline" className="w-full">
+                  Relationship Timeline
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Link href="/#quiz" className="w-full">
+                  Love Language Quiz
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Link href="/#challenges" className="w-full">
+                  Couple Challenges
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <ThemeToggle />
+        </div>
       </div>
     </nav>
   )

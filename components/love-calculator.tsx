@@ -195,19 +195,24 @@ export default function LoveCalculator() {
   const shareResult = async () => {
     if (!result) return
 
-    const shareText = `${result.maleName} ❤️ ${result.femaleName} = ${result.percentage}% Love Match! 💕 Check your compatibility at Love Calculator!`
+    // Create a custom share image URL (this would typically be generated server-side)
+    const shareImageUrl = `https://via.placeholder.com/600x400/ec4899/ffffff?text=${result.maleName}+%E2%9D%A4%EF%B8%8F+${result.femaleName}+%3D+${result.percentage}%25+Love+Match`
+
+    const shareText = `${result.maleName} ❤️ ${result.femaleName} = ${result.percentage}% Love Match! 💕 Check your compatibility at Tush Love Calculator!`
+    const shareUrl = window.location.href
 
     if (navigator.share) {
       try {
         await navigator.share({
           title: "Love Calculator Result",
           text: shareText,
+          url: shareUrl,
         })
       } catch (err) {
-        copyToClipboard(shareText)
+        copyToClipboard(`${shareText}\n\n${shareUrl}`)
       }
     } else {
-      copyToClipboard(shareText)
+      copyToClipboard(`${shareText}\n\n${shareUrl}`)
     }
   }
 
