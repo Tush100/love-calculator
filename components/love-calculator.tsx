@@ -294,7 +294,7 @@ export default function LoveCalculator() {
                 />
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Button variant="outline" onClick={generateRandomNames} className="flex-1">
                   <Shuffle className="h-4 w-4 mr-2" />
                   Random Names
@@ -311,28 +311,30 @@ export default function LoveCalculator() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button
-                onClick={calculateLove}
-                className="w-full bg-pink-600 hover:bg-pink-700 text-white"
-                disabled={!maleName.trim() || !femaleName.trim() || isCalculating}
-              >
-                {isCalculating ? (
-                  <span className="flex items-center">
-                    Calculating
-                    <motion.span
-                      className="ml-2"
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{ repeat: Number.POSITIVE_INFINITY, duration: 1 }}
-                    >
-                      ❤️
-                    </motion.span>
-                  </span>
-                ) : (
-                  <span className="flex items-center">
-                    Calculate Love <Heart className="ml-2 h-4 w-4" />
-                  </span>
-                )}
-              </Button>
+              <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="w-full">
+                <Button
+                  onClick={calculateLove}
+                  className="w-full bg-pink-600 hover:bg-pink-700 text-white"
+                  disabled={!maleName.trim() || !femaleName.trim() || isCalculating}
+                >
+                  {isCalculating ? (
+                    <span className="flex items-center">
+                      Calculating
+                      <motion.span
+                        className="ml-2"
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ repeat: Number.POSITIVE_INFINITY, duration: 1 }}
+                      >
+                        ❤️
+                      </motion.span>
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      Calculate Love <Heart className="ml-2 h-4 w-4" />
+                    </span>
+                  )}
+                </Button>
+              </motion.div>
             </CardFooter>
           </Card>
 
