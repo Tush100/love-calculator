@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -194,9 +194,14 @@ export default function LoveHoroscope() {
   const [partnerSign, setPartnerSign] = useState<string>("")
   const [currentHoroscope, setCurrentHoroscope] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
-  const [showCompatibility, setShowCompatibility] = useState(false)
+  const [compatibilityResult, setCompatibilityResult] = useState<{
+    percentage: number
+    userZodiac: (typeof zodiacSigns)[0]
+    partnerZodiac: (typeof zodiacSigns)[0]
+    description: string
+  } | null>(null)
 
-  const generateHoroscope = () => {
+  const generateHoroscope = useCallback(() => {
     if (!selectedSign) return
 
     setIsLoading(true)
@@ -206,9 +211,16 @@ export default function LoveHoroscope() {
       setCurrentHoroscope(randomHoroscope)
       setIsLoading(false)
     }, 1500)
-  }
+  }, [selectedSign])
 
-  const calculateCompatibility = () => {
+  const getCompatibilityDescription = useCallback((percentage: number) => {
+    if (percentage >= 85) return "Absolutely magical! You two are a perfect cosmic match! ✨"
+    if (percentage >= 70) return "Great compatibility! Your energies complement each other beautifully! 💕"
+    if (percentage >= 55) return "Good potential! With understanding, you can create something beautiful! 🌟"
+    return "Challenging but rewarding! Opposites can attract with effort and patience! 💪"
+  }, [])
+
+  const calculateCompatibility = useCallback(() => {
     if (!selectedSign || !partnerSign) return
 
     const userZodiac = zodiacSigns.find((sign) => sign.name === selectedSign)
@@ -220,25 +232,18 @@ export default function LoveHoroscope() {
       compatibilityMatrix[userZodiac.element as keyof typeof compatibilityMatrix][
         partnerZodiac.element as keyof (typeof compatibilityMatrix)[keyof typeof compatibilityMatrix]
       ]
-    setShowCompatibility(true)
 
-    return {
+    const result = {
       percentage: compatibility,
       userZodiac,
       partnerZodiac,
       description: getCompatibilityDescription(compatibility),
     }
-  }
 
-  const getCompatibilityDescription = (percentage: number) => {
-    if (percentage >= 85) return "Absolutely magical! You two are a perfect cosmic match! ✨"
-    if (percentage >= 70) return "Great compatibility! Your energies complement each other beautifully! 💕"
-    if (percentage >= 55) return "Good potential! With understanding, you can create something beautiful! 🌟"
-    return "Challenging but rewarding! Opposites can attract with effort and patience! 💪"
-  }
+    setCompatibilityResult(result)
+  }, [selectedSign, partnerSign, getCompatibilityDescription])
 
   const selectedZodiac = zodiacSigns.find((sign) => sign.name === selectedSign)
-  const compatibilityResult = showCompatibility ? calculateCompatibility() : null
 
   return (
     <div className="space-y-6">

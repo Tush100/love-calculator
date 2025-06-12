@@ -7,7 +7,8 @@ export async function POST(req: NextRequest) {
   try {
     const { message } = await req.json()
 
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" })
+    // Use the correct model name for Gemini 2.0 Flash
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" })
 
     const prompt = `You are a warm, empathetic love and relationship advisor AI assistant for the "Tush Love Calculator" website. Your expertise includes:
 

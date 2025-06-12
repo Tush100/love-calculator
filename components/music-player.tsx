@@ -16,121 +16,62 @@ interface Song {
   url: string
 }
 
-// Create simple audio data URLs for romantic background music
-const createAudioDataUrl = (frequency: number, duration = 2) => {
-  const sampleRate = 44100
-  const samples = sampleRate * duration
-  const buffer = new ArrayBuffer(44 + samples * 2)
-  const view = new DataView(buffer)
-
-  // WAV header
-  const writeString = (offset: number, string: string) => {
-    for (let i = 0; i < string.length; i++) {
-      view.setUint8(offset + i, string.charCodeAt(i))
-    }
-  }
-
-  writeString(0, "RIFF")
-  view.setUint32(4, 36 + samples * 2, true)
-  writeString(8, "WAVE")
-  writeString(12, "fmt ")
-  view.setUint32(16, 16, true)
-  view.setUint16(20, 1, true)
-  view.setUint16(22, 1, true)
-  view.setUint32(24, sampleRate, true)
-  view.setUint32(28, sampleRate * 2, true)
-  view.setUint16(32, 2, true)
-  view.setUint16(34, 16, true)
-  writeString(36, "data")
-  view.setUint32(40, samples * 2, true)
-
-  // Generate simple sine wave
-  for (let i = 0; i < samples; i++) {
-    const sample = Math.sin((2 * Math.PI * frequency * i) / sampleRate) * 0.3
-    view.setInt16(44 + i * 2, sample * 32767, true)
-  }
-
-  const blob = new Blob([buffer], { type: "audio/wav" })
-  return URL.createObjectURL(blob)
-}
-
 const romanticPlaylist: Song[] = [
   {
     id: 1,
-    title: "Perfect",
-    artist: "Ed Sheeran",
-    duration: "4:23",
-    url: createAudioDataUrl(440, 30), // A note for 30 seconds
-  },
-  {
-    id: 2,
     title: "All of Me",
     artist: "John Legend",
     duration: "4:29",
-    url: createAudioDataUrl(523, 30), // C note
+    url: "/audio/john-legend-all-of-me.mp3",
   },
   {
-    id: 3,
-    title: "Thinking Out Loud",
-    artist: "Ed Sheeran",
-    duration: "4:41",
-    url: createAudioDataUrl(659, 30), // E note
-  },
-  {
-    id: 4,
-    title: "A Thousand Years",
-    artist: "Christina Perri",
-    duration: "4:45",
-    url: createAudioDataUrl(392, 30), // G note
-  },
-  {
-    id: 5,
+    id: 2,
     title: "Make You Feel My Love",
     artist: "Adele",
     duration: "3:32",
-    url: createAudioDataUrl(494, 30), // B note
+    url: "/audio/adele-make-you-feel-my-love.mp3",
+  },
+  {
+    id: 3,
+    title: "Perfect",
+    artist: "Ed Sheeran",
+    duration: "4:23",
+    url: "/audio/john-legend-all-of-me.mp3", // Using available file as placeholder
+  },
+  {
+    id: 4,
+    title: "Thinking Out Loud",
+    artist: "Ed Sheeran",
+    duration: "4:41",
+    url: "/audio/adele-make-you-feel-my-love.mp3", // Using available file as placeholder
+  },
+  {
+    id: 5,
+    title: "A Thousand Years",
+    artist: "Christina Perri",
+    duration: "4:45",
+    url: "/audio/john-legend-all-of-me.mp3", // Using available file as placeholder
   },
   {
     id: 6,
     title: "At Last",
     artist: "Etta James",
     duration: "3:01",
-    url: createAudioDataUrl(349, 30), // F note
+    url: "/audio/adele-make-you-feel-my-love.mp3", // Using available file as placeholder
   },
   {
     id: 7,
     title: "Can't Help Myself",
     artist: "Four Tops",
     duration: "2:57",
-    url: createAudioDataUrl(587, 30), // D note
+    url: "/audio/john-legend-all-of-me.mp3", // Using available file as placeholder
   },
   {
     id: 8,
     title: "L-O-V-E",
     artist: "Nat King Cole",
     duration: "2:30",
-    url: createAudioDataUrl(330, 30), // E note (lower)
-  },
-  {
-    id: 9,
-    title: "The Way You Look Tonight",
-    artist: "Frank Sinatra",
-    duration: "3:22",
-    url: createAudioDataUrl(440, 30), // A note
-  },
-  {
-    id: 10,
-    title: "Unchained Melody",
-    artist: "The Righteous Brothers",
-    duration: "3:36",
-    url: createAudioDataUrl(523, 30), // C note
-  },
-  {
-    id: 11,
-    title: "Stand by Me",
-    artist: "Ben E. King",
-    duration: "2:58",
-    url: createAudioDataUrl(659, 30), // E note
+    url: "/audio/adele-make-you-feel-my-love.mp3", // Using available file as placeholder
   },
 ]
 
@@ -138,11 +79,12 @@ export function MusicPlayer() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentSong, setCurrentSong] = useState(0)
   const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(30) // Default 30 seconds
+  const [duration, setDuration] = useState(0)
   const [volume, setVolume] = useState(0.5)
   const [isMuted, setIsMuted] = useState(false)
   const [showPlaylist, setShowPlaylist] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
 
   useEffect(() => {
@@ -150,20 +92,35 @@ export function MusicPlayer() {
     if (!audio) return
 
     const handleTimeUpdate = () => setCurrentTime(audio.currentTime)
-    const handleLoadedMetadata = () => setDuration(audio.duration)
+    const handleLoadedMetadata = () => {
+      setDuration(audio.duration)
+      setIsLoading(false)
+    }
+    const handleLoadStart = () => setIsLoading(true)
+    const handleCanPlay = () => setIsLoading(false)
     const handleEnded = () => {
       setIsPlaying(false)
       nextSong()
     }
+    const handleError = (e: Event) => {
+      console.error("Audio error:", e)
+      setIsLoading(false)
+    }
 
     audio.addEventListener("timeupdate", handleTimeUpdate)
     audio.addEventListener("loadedmetadata", handleLoadedMetadata)
+    audio.addEventListener("loadstart", handleLoadStart)
+    audio.addEventListener("canplay", handleCanPlay)
     audio.addEventListener("ended", handleEnded)
+    audio.addEventListener("error", handleError)
 
     return () => {
       audio.removeEventListener("timeupdate", handleTimeUpdate)
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata)
+      audio.removeEventListener("loadstart", handleLoadStart)
+      audio.removeEventListener("canplay", handleCanPlay)
       audio.removeEventListener("ended", handleEnded)
+      audio.removeEventListener("error", handleError)
     }
   }, [currentSong])
 
@@ -174,7 +131,7 @@ export function MusicPlayer() {
   }, [volume, isMuted])
 
   const togglePlay = async () => {
-    if (!audioRef.current) return
+    if (!audioRef.current || isLoading) return
 
     try {
       if (isPlaying) {
@@ -192,27 +149,31 @@ export function MusicPlayer() {
   const nextSong = () => {
     setCurrentSong((prev) => (prev + 1) % romanticPlaylist.length)
     setIsPlaying(false)
+    setCurrentTime(0)
   }
 
   const prevSong = () => {
     setCurrentSong((prev) => (prev - 1 + romanticPlaylist.length) % romanticPlaylist.length)
     setIsPlaying(false)
+    setCurrentTime(0)
   }
 
   const selectSong = (index: number) => {
     setCurrentSong(index)
     setShowPlaylist(false)
     setIsPlaying(false)
+    setCurrentTime(0)
   }
 
   const handleSeek = (value: number[]) => {
-    if (audioRef.current) {
+    if (audioRef.current && !isLoading) {
       audioRef.current.currentTime = value[0]
       setCurrentTime(value[0])
     }
   }
 
   const formatTime = (time: number) => {
+    if (!time || isNaN(time)) return "0:00"
     const minutes = Math.floor(time / 60)
     const seconds = Math.floor(time % 60)
     return `${minutes}:${seconds.toString().padStart(2, "0")}`
@@ -222,7 +183,7 @@ export function MusicPlayer() {
 
   return (
     <>
-      <audio ref={audioRef} src={currentSongData.url} preload="metadata" />
+      <audio ref={audioRef} src={currentSongData.url} preload="metadata" crossOrigin="anonymous" />
 
       <motion.div
         className="fixed bottom-4 left-4 z-40"
@@ -249,6 +210,7 @@ export function MusicPlayer() {
                       <div className="min-w-0 flex-1">
                         <p className="font-semibold text-sm truncate">{currentSongData.title}</p>
                         <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{currentSongData.artist}</p>
+                        {isLoading && <p className="text-xs text-blue-500">Loading...</p>}
                       </div>
                     </div>
                     <Button variant="ghost" size="icon" onClick={() => setIsMinimized(true)} className="h-8 w-8">
@@ -259,10 +221,11 @@ export function MusicPlayer() {
                   <div className="mb-4">
                     <Slider
                       value={[currentTime]}
-                      max={duration}
+                      max={duration || 100}
                       step={0.1}
                       onValueChange={handleSeek}
                       className="w-full"
+                      disabled={isLoading}
                     />
                     <div className="flex justify-between text-xs text-gray-500 mt-1">
                       <span>{formatTime(currentTime)}</span>
@@ -276,9 +239,16 @@ export function MusicPlayer() {
                     </Button>
                     <Button
                       onClick={togglePlay}
-                      className="h-12 w-12 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white shadow-lg"
+                      disabled={isLoading}
+                      className="h-12 w-12 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white shadow-lg disabled:opacity-50"
                     >
-                      {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 ml-1" />}
+                      {isLoading ? (
+                        <div className="h-6 w-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : isPlaying ? (
+                        <Pause className="h-6 w-6" />
+                      ) : (
+                        <Play className="h-6 w-6 ml-1" />
+                      )}
                     </Button>
                     <Button variant="ghost" size="icon" onClick={nextSong} className="h-10 w-10">
                       <SkipForward className="h-5 w-5" />
@@ -321,9 +291,16 @@ export function MusicPlayer() {
                       e.stopPropagation()
                       togglePlay()
                     }}
-                    className="h-10 w-10 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white"
+                    disabled={isLoading}
+                    className="h-10 w-10 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white disabled:opacity-50"
                   >
-                    {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                    {isLoading ? (
+                      <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : isPlaying ? (
+                      <Pause className="h-4 w-4" />
+                    ) : (
+                      <Play className="h-4 w-4" />
+                    )}
                   </Button>
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{currentSongData.title}</p>
