@@ -19,100 +19,116 @@ interface Song {
 const romanticPlaylist: Song[] = [
   {
     id: 1,
+    title: "Perfect",
+    artist: "Ed Sheeran",
+    duration: "4:23",
+    url: "/audio/perfect-ed-sheeran.mp3",
+  },
+  {
+    id: 2,
     title: "All of Me",
     artist: "John Legend",
     duration: "4:29",
     url: "/audio/john-legend-all-of-me.mp3",
   },
   {
-    id: 2,
+    id: 3,
     title: "Make You Feel My Love",
     artist: "Adele",
     duration: "3:32",
     url: "/audio/adele-make-you-feel-my-love.mp3",
   },
   {
-    id: 3,
-    title: "Perfect",
-    artist: "Ed Sheeran",
-    duration: "4:23",
-    url: "/audio/john-legend-all-of-me.mp3", // Using available file as placeholder
-  },
-  {
     id: 4,
     title: "Thinking Out Loud",
     artist: "Ed Sheeran",
     duration: "4:41",
-    url: "/audio/adele-make-you-feel-my-love.mp3", // Using available file as placeholder
+    url: "/audio/perfect-ed-sheeran.mp3", // Using Perfect as placeholder
   },
   {
     id: 5,
     title: "A Thousand Years",
     artist: "Christina Perri",
     duration: "4:45",
-    url: "/audio/john-legend-all-of-me.mp3", // Using available file as placeholder
+    url: "/audio/john-legend-all-of-me.mp3", // Using All of Me as placeholder
   },
   {
     id: 6,
     title: "At Last",
     artist: "Etta James",
     duration: "3:01",
-    url: "/audio/adele-make-you-feel-my-love.mp3", // Using available file as placeholder
-  },
-  {
-    id: 7,
-    title: "Can't Help Myself",
-    artist: "Four Tops",
-    duration: "2:57",
-    url: "/audio/john-legend-all-of-me.mp3", // Using available file as placeholder
-  },
-  {
-    id: 8,
-    title: "L-O-V-E",
-    artist: "Nat King Cole",
-    duration: "2:30",
-    url: "/audio/adele-make-you-feel-my-love.mp3", // Using available file as placeholder
+    url: "/audio/adele-make-you-feel-my-love.mp3", // Using Adele as placeholder
   },
 ]
 
 export function MusicPlayer() {
   const [isPlaying, setIsPlaying] = useState(false)
-  const [currentSong, setCurrentSong] = useState(0)
+  const [currentSong, setCurrentSong] = useState(0) // Default to Perfect by Ed Sheeran
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
-  const [volume, setVolume] = useState(0.5)
+  const [volume, setVolume] = useState(0.7)
   const [isMuted, setIsMuted] = useState(false)
   const [showPlaylist, setShowPlaylist] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [audioError, setAudioError] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
 
   useEffect(() => {
     const audio = audioRef.current
     if (!audio) return
 
-    const handleTimeUpdate = () => setCurrentTime(audio.currentTime)
-    const handleLoadedMetadata = () => {
-      setDuration(audio.duration)
-      setIsLoading(false)
+    const handleTimeUpdate = () => {
+      if (audio.currentTime) {
+        setCurrentTime(audio.currentTime)
+      }
     }
-    const handleLoadStart = () => setIsLoading(true)
-    const handleCanPlay = () => setIsLoading(false)
+
+    const handleLoadedMetadata = () => {
+      if (audio.duration) {
+        setDuration(audio.duration)
+      }
+      setIsLoading(false)
+      setAudioError(false)
+    }
+
+    const handleLoadStart = () => {
+      setIsLoading(true)
+      setAudioError(false)
+    }
+
+    const handleCanPlay = () => {
+      setIsLoading(false)
+      setAudioError(false)
+    }
+
     const handleEnded = () => {
       setIsPlaying(false)
       nextSong()
     }
+
     const handleError = (e: Event) => {
       console.error("Audio error:", e)
       setIsLoading(false)
+      setAudioError(true)
     }
 
+    const handleLoadedData = () => {
+      setIsLoading(false)
+      setAudioError(false)
+    }
+
+    // Add all event listeners
     audio.addEventListener("timeupdate", handleTimeUpdate)
     audio.addEventListener("loadedmetadata", handleLoadedMetadata)
     audio.addEventListener("loadstart", handleLoadStart)
     audio.addEventListener("canplay", handleCanPlay)
     audio.addEventListener("ended", handleEnded)
     audio.addEventListener("error", handleError)
+    audio.addEventListener("loadeddata", handleLoadedData)
+
+    // Load the audio
+    audio.load()
 
     return () => {
       audio.removeEventListener("timeupdate", handleTimeUpdate)
@@ -121,6 +137,7 @@ export function MusicPlayer() {
       audio.removeEventListener("canplay", handleCanPlay)
       audio.removeEventListener("ended", handleEnded)
       audio.removeEventListener("error", handleError)
+      audio.removeEventListener("loadeddata", handleLoadedData)
     }
   }, [currentSong])
 
@@ -131,18 +148,37 @@ export function MusicPlayer() {
   }, [volume, isMuted])
 
   const togglePlay = async () => {
-    if (!audioRef.current || isLoading) return
+    const audio = audioRef.current
+    if (!audio || isLoading || audioError) return
 
     try {
       if (isPlaying) {
-        audioRef.current.pause()
+        audio.pause()
         setIsPlaying(false)
       } else {
-        await audioRef.current.play()
-        setIsPlaying(true)
+        // Ensure audio is loaded before playing
+        if (audio.readyState < 2) {
+          setIsLoading(true)
+          await new Promise((resolve) => {
+            const handleCanPlay = () => {
+              audio.removeEventListener("canplay", handleCanPlay)
+              resolve(void 0)
+            }
+            audio.addEventListener("canplay", handleCanPlay)
+          })
+          setIsLoading(false)
+        }
+
+        const playPromise = audio.play()
+        if (playPromise !== undefined) {
+          await playPromise
+          setIsPlaying(true)
+        }
       }
     } catch (error) {
       console.error("Playback error:", error)
+      setAudioError(true)
+      setIsLoading(false)
     }
   }
 
@@ -166,8 +202,9 @@ export function MusicPlayer() {
   }
 
   const handleSeek = (value: number[]) => {
-    if (audioRef.current && !isLoading) {
-      audioRef.current.currentTime = value[0]
+    const audio = audioRef.current
+    if (audio && !isLoading && !audioError && duration > 0) {
+      audio.currentTime = value[0]
       setCurrentTime(value[0])
     }
   }
@@ -183,7 +220,7 @@ export function MusicPlayer() {
 
   return (
     <>
-      <audio ref={audioRef} src={currentSongData.url} preload="metadata" crossOrigin="anonymous" />
+      <audio ref={audioRef} src={currentSongData.url} preload="auto" crossOrigin="anonymous" playsInline />
 
       <motion.div
         className="fixed bottom-4 left-4 z-40"
@@ -211,6 +248,7 @@ export function MusicPlayer() {
                         <p className="font-semibold text-sm truncate">{currentSongData.title}</p>
                         <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{currentSongData.artist}</p>
                         {isLoading && <p className="text-xs text-blue-500">Loading...</p>}
+                        {audioError && <p className="text-xs text-red-500">Audio unavailable</p>}
                       </div>
                     </div>
                     <Button variant="ghost" size="icon" onClick={() => setIsMinimized(true)} className="h-8 w-8">
@@ -225,7 +263,7 @@ export function MusicPlayer() {
                       step={0.1}
                       onValueChange={handleSeek}
                       className="w-full"
-                      disabled={isLoading}
+                      disabled={isLoading || audioError}
                     />
                     <div className="flex justify-between text-xs text-gray-500 mt-1">
                       <span>{formatTime(currentTime)}</span>
@@ -239,7 +277,7 @@ export function MusicPlayer() {
                     </Button>
                     <Button
                       onClick={togglePlay}
-                      disabled={isLoading}
+                      disabled={isLoading || audioError}
                       className="h-12 w-12 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white shadow-lg disabled:opacity-50"
                     >
                       {isLoading ? (
@@ -276,6 +314,12 @@ export function MusicPlayer() {
                       <List className="h-4 w-4" />
                     </Button>
                   </div>
+
+                  {audioError && (
+                    <div className="mt-3 text-xs text-center text-gray-500">
+                      💕 Enjoy the romantic atmosphere while we work on the music!
+                    </div>
+                  )}
                 </motion.div>
               ) : (
                 <motion.div
@@ -291,7 +335,7 @@ export function MusicPlayer() {
                       e.stopPropagation()
                       togglePlay()
                     }}
-                    disabled={isLoading}
+                    disabled={isLoading || audioError}
                     className="h-10 w-10 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white disabled:opacity-50"
                   >
                     {isLoading ? (
