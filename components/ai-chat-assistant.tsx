@@ -9,27 +9,23 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { motion, AnimatePresence } from "framer-motion"
-
-interface Message {
-  id: string
-  text: string
-  isUser: boolean
-  timestamp: Date
-}
+import { useChat } from "ai/react"
 
 export function AIChatAssistant() {
   const [isOpen, setIsOpen] = useState(false)
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      text: "Hi! I'm your love and relationship advisor! 💕 I'm here to help with relationship advice, love questions, and dating tips. What would you like to talk about?",
-      isUser: false,
-      timestamp: new Date(),
-    },
-  ])
-  const [inputValue, setInputValue] = useState("")
-  const [isTyping, setIsTyping] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+
+  const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
+    api: "/api/chat",
+    initialMessages: [
+      {
+        id: "welcome",
+        role: "assistant",
+        content:
+          "Hi! I'm your love and relationship advisor! 💕 I'm here to help with relationship advice, love questions, and dating tips. What would you like to talk about?",
+      },
+    ],
+  })
 
   // Scroll to bottom when new messages are added
   useEffect(() => {
@@ -38,96 +34,17 @@ export function AIChatAssistant() {
     }
   }, [messages])
 
-  // Simple AI responses for love and relationship advice
-  const getAIResponse = (userMessage: string): string => {
-    const message = userMessage.toLowerCase()
-
-    // Love advice responses
-    if (message.includes("love") || message.includes("relationship")) {
-      const loveAdvice = [
-        "Love is about understanding, patience, and growing together. What specific aspect of your relationship would you like to explore? 💕",
-        "Every relationship has its ups and downs. Communication and trust are the foundations of lasting love. Tell me more about your situation! 💖",
-        "Love isn't just about finding the right person, but being the right person too. What qualities do you value most in a partner? ✨",
-        "Remember, healthy relationships require effort from both partners. What challenges are you facing in your love life? 💝",
-      ]
-      return loveAdvice[Math.floor(Math.random() * loveAdvice.length)]
-    }
-
-    // Dating advice
-    if (message.includes("dating") || message.includes("date")) {
-      const datingAdvice = [
-        "Dating should be fun and authentic! Be yourself and look for someone who appreciates the real you. What kind of dating advice do you need? 🌹",
-        "Great dates are about connection, not perfection. Focus on getting to know each other. What's your ideal date like? 💕",
-        "The best relationships often start as friendships. Take your time and enjoy the process of getting to know someone! 🥰",
-      ]
-      return datingAdvice[Math.floor(Math.random() * datingAdvice.length)]
-    }
-
-    // Compatibility questions
-    if (message.includes("compatible") || message.includes("match")) {
-      return "Compatibility isn't just about similarities - it's about how well you complement each other! Shared values, good communication, and mutual respect matter most. What compatibility concerns do you have? 💫"
-    }
-
-    // Breakup/heartbreak support
-    if (message.includes("breakup") || message.includes("heartbreak") || message.includes("sad")) {
-      return "I'm sorry you're going through a tough time. Heartbreak is painful, but it's also a chance to grow and learn about yourself. Take time to heal, and remember that you deserve love and happiness. 💙"
-    }
-
-    // Marriage/commitment
-    if (message.includes("marriage") || message.includes("commit")) {
-      return "Marriage and commitment are beautiful when both partners are ready and willing to grow together. It's about choosing each other every day. What are your thoughts on commitment? 💍"
-    }
-
-    // General relationship problems
-    if (message.includes("fight") || message.includes("argue") || message.includes("problem")) {
-      return "Conflicts are normal in relationships - it's how you handle them that matters. Try to listen actively, express your feelings calmly, and work together toward solutions. What's the main issue you're facing? 🤝"
-    }
-
-    // Default responses
-    const defaultResponses = [
-      "That's interesting! Tell me more about how you're feeling about this situation. I'm here to help! 💕",
-      "I'd love to help you with that! Can you share more details about what's on your mind? 🌟",
-      "Every love story is unique! What specific advice or guidance are you looking for? 💖",
-      "I'm here to support you through your relationship journey. What would you like to explore together? ✨",
-    ]
-
-    return defaultResponses[Math.floor(Math.random() * defaultResponses.length)]
-  }
-
-  const handleSendMessage = async () => {
-    if (!inputValue.trim()) return
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: inputValue,
-      isUser: true,
-      timestamp: new Date(),
-    }
-
-    setMessages((prev) => [...prev, userMessage])
-    setInputValue("")
-    setIsTyping(true)
-
-    // Simulate AI thinking time
-    setTimeout(
-      () => {
-        const aiResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          text: getAIResponse(inputValue),
-          isUser: false,
-          timestamp: new Date(),
-        }
-        setMessages((prev) => [...prev, aiResponse])
-        setIsTyping(false)
-      },
-      1000 + Math.random() * 2000,
-    ) // Random delay between 1-3 seconds
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (!input.trim() || isLoading) return
+    handleSubmit(e)
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
-      handleSendMessage()
+      if (!input.trim() || isLoading) return
+      handleSubmit(e as any)
     }
   }
 
@@ -184,21 +101,21 @@ export function AIChatAssistant() {
                         key={message.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className={`flex ${message.isUser ? "justify-end" : "justify-start"}`}
+                        className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                       >
                         <div
                           className={`max-w-[80%] p-3 rounded-lg ${
-                            message.isUser
+                            message.role === "user"
                               ? "bg-pink-500 text-white"
                               : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                           }`}
                         >
-                          <p className="text-sm">{message.text}</p>
+                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                         </div>
                       </motion.div>
                     ))}
 
-                    {isTyping && (
+                    {isLoading && (
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
                         <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg">
                           <div className="flex items-center gap-1">
@@ -208,28 +125,38 @@ export function AIChatAssistant() {
                         </div>
                       </motion.div>
                     )}
+
+                    {error && (
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
+                        <div className="bg-red-100 dark:bg-red-900/20 p-3 rounded-lg">
+                          <p className="text-sm text-red-600 dark:text-red-400">
+                            Sorry, I'm having trouble connecting right now. Please try again! 💕
+                          </p>
+                        </div>
+                      </motion.div>
+                    )}
                   </div>
                 </ScrollArea>
 
                 <div className="p-4 border-t">
-                  <div className="flex gap-2">
+                  <form onSubmit={onSubmit} className="flex gap-2">
                     <Input
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
+                      value={input}
+                      onChange={handleInputChange}
                       onKeyPress={handleKeyPress}
                       placeholder="Ask me about love and relationships..."
                       className="flex-1"
-                      disabled={isTyping}
+                      disabled={isLoading}
                     />
                     <Button
-                      onClick={handleSendMessage}
-                      disabled={!inputValue.trim() || isTyping}
+                      type="submit"
+                      disabled={!input.trim() || isLoading}
                       size="icon"
                       className="bg-pink-500 hover:bg-pink-600"
                     >
                       <Send className="h-4 w-4" />
                     </Button>
-                  </div>
+                  </form>
                 </div>
               </CardContent>
             </Card>
