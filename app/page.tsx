@@ -8,6 +8,8 @@ import RelationshipTimeline from "@/components/relationship-timeline"
 import LoveLanguageQuiz from "@/components/love-language-quiz"
 import CoupleChallenges from "@/components/couple-challenges"
 import NameMeaningComponent from "@/components/name-meaning"
+import { AIChatAssistant } from "@/components/ai-chat-assistant"
+import { MusicPlayer } from "@/components/music-player"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function Home() {
@@ -74,6 +76,12 @@ export default function Home() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* AI Chat Assistant */}
+      <AIChatAssistant />
+
+      {/* Music Player */}
+      <MusicPlayer />
     </main>
   )
 }

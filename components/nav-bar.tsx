@@ -2,74 +2,78 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Heart, Mail, ChevronDown } from "lucide-react"
+import { Heart, Mail, Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { useState } from "react"
 
 export function NavBar() {
   const pathname = usePathname()
+  const [isOpen, setIsOpen] = useState(false)
+
+  const navItems = [
+    { href: "/", label: "Calculator", icon: Heart },
+    { href: "/contact", label: "Contact Me", icon: Mail },
+  ]
 
   return (
-    <nav className="max-w-md mx-auto pt-4">
-      <div className="flex items-center justify-between">
-        <div className="flex justify-center gap-2">
-          <Link
-            href="/"
-            className={cn(
-              "flex items-center gap-1 px-4 py-2 rounded-full text-sm font-medium transition-colors",
-              pathname === "/"
-                ? "bg-pink-500 text-white"
-                : "bg-white/80 hover:bg-pink-100 text-pink-600 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-pink-400",
-            )}
-          >
-            <Heart className="h-4 w-4" />
-            Calculator
-          </Link>
-          <Link
-            href="/contact"
-            className={cn(
-              "flex items-center gap-1 px-4 py-2 rounded-full text-sm font-medium transition-colors",
-              pathname === "/contact"
-                ? "bg-pink-500 text-white"
-                : "bg-white/80 hover:bg-pink-100 text-pink-600 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-pink-400",
-            )}
-          >
-            <Mail className="h-4 w-4" />
-            Contact Me
-          </Link>
+    <nav className="w-full px-4 pt-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex items-center justify-between">
+          <div className="flex gap-2">
+            {navItems.map(({ href, label, icon: Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                className={cn(
+                  "flex items-center gap-1 px-4 py-2 rounded-full text-sm font-medium transition-colors",
+                  pathname === href
+                    ? "bg-pink-500 text-white"
+                    : "bg-white/80 hover:bg-pink-100 text-pink-600 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-pink-400",
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </Link>
+            ))}
+          </div>
+          <ThemeToggle />
         </div>
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 px-2">
-                Features <ChevronDown className="h-4 w-4 ml-1" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>
-                <Link href="/#horoscope" className="w-full">
-                  Love Horoscope
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link href="/#timeline" className="w-full">
-                  Relationship Timeline
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link href="/#quiz" className="w-full">
-                  Love Language Quiz
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link href="/#challenges" className="w-full">
-                  Couple Challenges
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+
+        {/* Mobile Navigation */}
+        <div className="md:hidden flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon" className="bg-white/80 dark:bg-gray-800">
+                  <Menu className="h-4 w-4" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-64">
+                <div className="flex flex-col gap-4 mt-8">
+                  {navItems.map(({ href, label, icon: Icon }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={() => setIsOpen(false)}
+                      className={cn(
+                        "flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
+                        pathname === href
+                          ? "bg-pink-500 text-white"
+                          : "hover:bg-pink-100 text-pink-600 dark:hover:bg-gray-700 dark:text-pink-400",
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {label}
+                    </Link>
+                  ))}
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
           <ThemeToggle />
         </div>
       </div>
