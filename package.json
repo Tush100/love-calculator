@@ -9,8 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@ai-sdk/openai": "latest",
     "@emotion/is-prop-valid": "latest",
+    "@google/generative-ai": "latest",
     "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-accordion": "latest",
     "@radix-ui/react-alert-dialog": "latest",
@@ -43,7 +43,6 @@
     "@sveltejs/kit": "latest",
     "@vercel/analytics": "latest",
     "@vercel/speed-insights": "latest",
-    "ai": "latest",
     "autoprefixer": "^10.4.20",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

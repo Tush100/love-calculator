@@ -1,52 +1,55 @@
-import { openai } from "@ai-sdk/openai"
-import { streamText } from "ai"
+import { GoogleGenerativeAI } from "@google/generative-ai"
+import { type NextRequest, NextResponse } from "next/server"
 
-export async function POST(req: Request) {
+const genAI = new GoogleGenerativeAI("AIzaSyB2lp7pL5zc2sUGKBdrkZQSeMGFMzbcfHA")
+
+export async function POST(req: NextRequest) {
   try {
-    const { messages } = await req.json()
+    const { message } = await req.json()
 
-    const result = await streamText({
-      model: openai("gpt-3.5-turbo"),
-      messages: [
-        {
-          role: "system",
-          content: `You are a warm, empathetic love and relationship advisor AI assistant. Your name is "Love Advisor AI" and you specialize in:
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" })
+
+    const prompt = `You are a warm, empathetic love and relationship advisor AI assistant for the "Tush Love Calculator" website. Your expertise includes:
 
 - Relationship advice and guidance
 - Dating tips and strategies  
 - Love compatibility insights
 - Communication improvement
-- Conflict resolution
+- Conflict resolution in relationships
 - Emotional support during breakups
 - Marriage and commitment guidance
 - Self-love and personal growth
+- Understanding love languages
+- Building healthy relationships
+
+Context: This is a romantic website that helps people calculate love compatibility, provides relationship challenges, love horoscopes, and relationship tools. Users come here seeking love advice and relationship guidance.
 
 Always respond with:
 - Empathy and understanding
-- Practical, actionable advice
+- Practical, actionable relationship advice
 - Positive and encouraging tone
-- Relevant questions to help users reflect
-- Appropriate use of heart emojis (💕, 💖, 💝, ✨, 🌹)
+- Relevant questions to help users reflect on their relationships
+- Appropriate use of heart emojis (💕, 💖, 💝, ✨, 🌹) but don't overuse them
+- Keep responses conversational and supportive
+- Focus on love, relationships, dating, and emotional well-being
 
-Keep responses conversational, supportive, and focused on love and relationships. If asked about topics outside relationships, gently redirect back to love and relationship matters.`,
-        },
-        ...messages,
-      ],
-      temperature: 0.7,
-      maxTokens: 500,
-    })
+If asked about topics completely unrelated to love/relationships, gently redirect back to relationship matters while being helpful.
 
-    return result.toAIStreamResponse()
+User message: ${message}`
+
+    const result = await model.generateContent(prompt)
+    const response = await result.response
+    const text = response.text()
+
+    return NextResponse.json({ message: text })
   } catch (error) {
-    console.error("Chat API error:", error)
-    return new Response(
-      JSON.stringify({
-        error: "I apologize, but I'm having trouble connecting right now. Please try again in a moment! 💕",
-      }),
+    console.error("Gemini AI error:", error)
+    return NextResponse.json(
       {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
+        error:
+          "I'm having trouble connecting right now, but I'm here for you! 💕 Please try asking your relationship question again in a moment.",
       },
+      { status: 500 },
     )
   }
 }
