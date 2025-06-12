@@ -2,59 +2,121 @@
 
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { Quote } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
+import { Heart, Quote, RefreshCw, Share2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
-const loveQuotes = [
-  "Love is composed of a single soul inhabiting two bodies. - Aristotle",
-  "Where there is love there is life. - Mahatma Gandhi",
-  "The best thing to hold onto in life is each other. - Audrey Hepburn",
-  "To love and be loved is to feel the sun from both sides. - David Viscott",
-  "Love is when the other person's happiness is more important than your own. - H. Jackson Brown Jr.",
-  "You know you're in love when you can't fall asleep because reality is finally better than your dreams. - Dr. Seuss",
-  "The greatest happiness of life is the conviction that we are loved. - Victor Hugo",
-  "Love is like the wind, you can't see it but you can feel it. - Nicholas Sparks",
-  "Love is not about how many days, months, or years you have been together. Love is about how much you love each other every single day.",
-  "I love you not because of who you are, but because of who I am when I am with you.",
-  "Love is a canvas furnished by nature and embroidered by imagination. - Voltaire",
-  "The best love is the kind that awakens the soul and makes us reach for more. - Nicholas Sparks",
+const quotes = [
+  {
+    text: "Love is composed of a single soul inhabiting two bodies.",
+    author: "Aristotle",
+  },
+  {
+    text: "The best thing to hold onto in life is each other.",
+    author: "Audrey Hepburn",
+  },
+  {
+    text: "You know you're in love when you can't fall asleep because reality is finally better than your dreams.",
+    author: "Dr. Seuss",
+  },
+  {
+    text: "To love and be loved is to feel the sun from both sides.",
+    author: "David Viscott",
+  },
+  {
+    text: "Love doesn't make the world go 'round. Love is what makes the ride worthwhile.",
+    author: "Franklin P. Jones",
+  },
+  {
+    text: "The greatest happiness of life is the conviction that we are loved; loved for ourselves, or rather, loved in spite of ourselves.",
+    author: "Victor Hugo",
+  },
+  {
+    text: "Love is when the other person's happiness is more important than your own.",
+    author: "H. Jackson Brown Jr.",
+  },
+  {
+    text: "The best and most beautiful things in this world cannot be seen or even heard, but must be felt with the heart.",
+    author: "Helen Keller",
+  },
+  {
+    text: "Love is like the wind, you can't see it but you can feel it.",
+    author: "Nicholas Sparks",
+  },
+  {
+    text: "I love you not because of who you are, but because of who I am when I am with you.",
+    author: "Roy Croft",
+  },
+  {
+    text: "If I know what love is, it is because of you.",
+    author: "Hermann Hesse",
+  },
+  {
+    text: "Love is not about how many days, months, or years you have been together. Love is about how much you love each other every single day.",
+    author: "Anonymous",
+  },
 ]
 
 export function LoveQuotes() {
   const [currentQuote, setCurrentQuote] = useState(0)
-  const [direction, setDirection] = useState(0)
+  const [isFlipped, setIsFlipped] = useState(false)
 
-  const nextQuote = () => {
-    setDirection(1)
+  const getRandomQuote = () => {
+    setIsFlipped(true)
     setTimeout(() => {
-      setCurrentQuote((prev) => (prev + 1) % loveQuotes.length)
+      let newIndex
+      do {
+        newIndex = Math.floor(Math.random() * quotes.length)
+      } while (newIndex === currentQuote)
+      setCurrentQuote(newIndex)
+      setIsFlipped(false)
     }, 300)
   }
 
+  const shareQuote = () => {
+    const quote = `"${quotes[currentQuote].text}" - ${quotes[currentQuote].author}`
+    if (navigator.share) {
+      navigator
+        .share({
+          title: "Love Quote",
+          text: quote,
+        })
+        .catch(console.error)
+    } else {
+      navigator.clipboard
+        .writeText(quote)
+        .then(() => {
+          alert("Quote copied to clipboard!")
+        })
+        .catch(console.error)
+    }
+  }
+
   return (
-    <Card
-      className="bg-gradient-to-r from-pink-100 to-purple-100 dark:from-pink-900/20 dark:to-purple-900/20 border-pink-200 cursor-pointer overflow-hidden"
-      onClick={nextQuote}
-    >
-      <CardContent className="p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <Quote className="h-4 w-4 text-pink-500" />
-          <span className="text-sm font-medium text-pink-700 dark:text-pink-300">Love Quote</span>
-        </div>
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.p
-            key={currentQuote}
-            initial={{ opacity: 0, x: direction * 100 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -direction * 100 }}
-            transition={{ duration: 0.3 }}
-            className="text-sm text-gray-700 dark:text-gray-300 italic"
-          >
-            {loveQuotes[currentQuote]}
-          </motion.p>
-        </AnimatePresence>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-right">Click for more quotes</p>
-      </CardContent>
-    </Card>
+    <div className="space-y-4">
+      <Card
+        className={`relative overflow-hidden transition-all duration-300 transform cursor-pointer ${
+          isFlipped ? "scale-95 opacity-0" : "scale-100 opacity-100"
+        }`}
+        onClick={getRandomQuote}
+      >
+        <CardContent className="p-6 text-center space-y-4">
+          <Quote className="h-8 w-8 text-pink-400 mx-auto opacity-50" />
+          <p className="text-lg font-medium text-gray-700 dark:text-gray-200">"{quotes[currentQuote].text}"</p>
+          <div className="flex items-center justify-center">
+            <Heart className="h-4 w-4 text-pink-500 mr-2" />
+            <p className="text-sm text-gray-500 dark:text-gray-400">{quotes[currentQuote].author}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-center space-x-2">
+        <Button variant="outline" size="sm" onClick={getRandomQuote}>
+          <RefreshCw className="h-4 w-4 mr-2" /> New Quote
+        </Button>
+        <Button variant="outline" size="sm" onClick={shareQuote}>
+          <Share2 className="h-4 w-4 mr-2" /> Share
+        </Button>
+      </div>
+    </div>
   )
 }

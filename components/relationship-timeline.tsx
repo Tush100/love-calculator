@@ -5,235 +5,195 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { Calendar, Heart, Trash2, Plus, Gift, MapPin, Camera } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { format } from "date-fns"
+import { CalendarIcon, Heart, Gift, Star, Sparkles, Cake, Home, Plane } from "lucide-react"
 
-interface TimelineEvent {
+type Event = {
   id: string
   title: string
-  date: string
+  date: Date
+  type: string
   description: string
-  type: "anniversary" | "first-date" | "milestone" | "special" | "other"
-  createdAt: string
 }
 
 const eventTypes = [
-  { value: "first-date", label: "First Date", icon: Heart, color: "bg-pink-500" },
-  { value: "anniversary", label: "Anniversary", icon: Gift, color: "bg-red-500" },
-  { value: "milestone", label: "Milestone", icon: Calendar, color: "bg-blue-500" },
-  { value: "special", label: "Special Moment", icon: Camera, color: "bg-purple-500" },
-  { value: "other", label: "Other", icon: MapPin, color: "bg-green-500" },
+  { value: "first-date", label: "First Date", icon: Heart },
+  { value: "anniversary", label: "Anniversary", icon: Cake },
+  { value: "milestone", label: "Milestone", icon: Star },
+  { value: "trip", label: "Trip", icon: Plane },
+  { value: "gift", label: "Gift", icon: Gift },
+  { value: "moving-in", label: "Moving In", icon: Home },
+  { value: "other", label: "Other", icon: Sparkles },
 ]
 
 export default function RelationshipTimeline() {
-  const [events, setEvents] = useState<TimelineEvent[]>([])
-  const [newEvent, setNewEvent] = useState({
+  const [events, setEvents] = useState<Event[]>([])
+  const [newEvent, setNewEvent] = useState<Partial<Event>>({
     title: "",
-    date: "",
+    date: new Date(),
+    type: "milestone",
     description: "",
-    type: "special" as TimelineEvent["type"],
   })
   const [isAdding, setIsAdding] = useState(false)
 
+  // Load events from localStorage on component mount
   useEffect(() => {
-    const savedEvents = localStorage.getItem("relationshipTimeline")
+    const savedEvents = localStorage.getItem("relationshipEvents")
     if (savedEvents) {
-      setEvents(JSON.parse(savedEvents))
+      try {
+        const parsedEvents = JSON.parse(savedEvents).map((event: any) => ({
+          ...event,
+          date: new Date(event.date),
+        }))
+        setEvents(parsedEvents)
+      } catch (error) {
+        console.error("Error parsing saved events:", error)
+      }
     }
   }, [])
 
+  // Save events to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem("relationshipTimeline", JSON.stringify(events))
+    localStorage.setItem("relationshipEvents", JSON.stringify(events))
   }, [events])
 
-  const addEvent = () => {
-    if (!newEvent.title.trim() || !newEvent.date) return
+  const handleAddEvent = () => {
+    if (!newEvent.title) return
 
-    const event: TimelineEvent = {
-      id: Date.now().toString(),
+    const event = {
       ...newEvent,
-      createdAt: new Date().toISOString(),
-    }
+      id: Date.now().toString(),
+      date: newEvent.date || new Date(),
+    } as Event
 
-    setEvents((prev) => [...prev, event].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
-    setNewEvent({ title: "", date: "", description: "", type: "special" })
+    setEvents([...events, event])
+    setNewEvent({
+      title: "",
+      date: new Date(),
+      type: "milestone",
+      description: "",
+    })
     setIsAdding(false)
   }
 
-  const removeEvent = (id: string) => {
-    setEvents((prev) => prev.filter((event) => event.id !== id))
-  }
-
-  const getEventTypeInfo = (type: string) => {
-    return eventTypes.find((t) => t.value === type) || eventTypes[3]
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })
-  }
-
-  const getDaysAgo = (dateString: string) => {
-    const eventDate = new Date(dateString)
-    const today = new Date()
-    const diffTime = today.getTime() - eventDate.getTime()
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
-
-    if (diffDays === 0) return "Today"
-    if (diffDays === 1) return "Yesterday"
-    if (diffDays < 0) return `In ${Math.abs(diffDays)} days`
-    return `${diffDays} days ago`
+  const getEventIcon = (type: string) => {
+    const eventType = eventTypes.find((t) => t.value === type)
+    const Icon = eventType?.icon || Sparkles
+    return <Icon className="h-5 w-5 text-pink-500" />
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-blue-500" />
-            Relationship Timeline
-          </CardTitle>
-          <CardDescription>Track and celebrate your special moments together</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {!isAdding ? (
-            <Button onClick={() => setIsAdding(true)} className="w-full">
-              <Plus className="h-4 w-4 mr-2" />
-              Add New Memory
-            </Button>
-          ) : (
-            <Card className="border-2 border-dashed border-pink-200">
-              <CardContent className="p-4 space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="eventTitle">Event Title</Label>
-                  <Input
-                    id="eventTitle"
-                    placeholder="e.g., Our First Kiss, Anniversary Dinner"
-                    value={newEvent.title}
-                    onChange={(e) => setNewEvent((prev) => ({ ...prev, title: e.target.value }))}
-                  />
-                </div>
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="text-center text-2xl text-pink-600 dark:text-pink-400">Relationship Timeline</CardTitle>
+        <CardDescription className="text-center">Track your special moments and milestones</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {!isAdding ? (
+          <Button onClick={() => setIsAdding(true)} className="w-full">
+            Add New Memory
+          </Button>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">New Memory</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">Title</Label>
+                <Input
+                  id="title"
+                  value={newEvent.title}
+                  onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                  placeholder="Our first date"
+                />
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="eventDate">Date</Label>
-                  <Input
-                    id="eventDate"
-                    type="date"
-                    value={newEvent.date}
-                    onChange={(e) => setNewEvent((prev) => ({ ...prev, date: e.target.value }))}
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label>Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start text-left font-normal">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {newEvent.date ? format(newEvent.date, "PPP") : "Select a date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={newEvent.date}
+                      onSelect={(date) => setNewEvent({ ...newEvent, date })}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="eventType">Event Type</Label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {eventTypes.map((type) => {
-                      const Icon = type.icon
-                      return (
-                        <Button
-                          key={type.value}
-                          variant={newEvent.type === type.value ? "default" : "outline"}
-                          size="sm"
-                          onClick={() =>
-                            setNewEvent((prev) => ({ ...prev, type: type.value as TimelineEvent["type"] }))
-                          }
-                          className="justify-start"
-                        >
-                          <Icon className="h-4 w-4 mr-2" />
+              <div className="space-y-2">
+                <Label>Event Type</Label>
+                <Select value={newEvent.type} onValueChange={(value) => setNewEvent({ ...newEvent, type: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select event type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {eventTypes.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        <div className="flex items-center">
+                          <type.icon className="mr-2 h-4 w-4" />
                           {type.label}
-                        </Button>
-                      )
-                    })}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Description (Optional)</Label>
+                <Input
+                  id="description"
+                  value={newEvent.description}
+                  onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                  placeholder="We went to that cute café..."
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setIsAdding(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAddEvent}>Save Memory</Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {events.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-500 dark:text-gray-400">No memories added yet. Add your first special moment!</p>
+          </div>
+        ) : (
+          <div className="relative pl-8 border-l-2 border-pink-200 dark:border-pink-800 space-y-8">
+            {events
+              .sort((a, b) => b.date.getTime() - a.date.getTime())
+              .map((event) => (
+                <div key={event.id} className="relative">
+                  <div className="absolute -left-10 p-2 bg-white dark:bg-gray-950 rounded-full border-2 border-pink-200 dark:border-pink-800">
+                    {getEventIcon(event.type)}
+                  </div>
+                  <div className="bg-white dark:bg-gray-900 p-4 rounded-lg shadow-sm">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{format(event.date, "MMMM d, yyyy")}</p>
+                    <h3 className="text-lg font-semibold mt-1">{event.title}</h3>
+                    {event.description && <p className="mt-2 text-gray-600 dark:text-gray-300">{event.description}</p>}
                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="eventDescription">Description (Optional)</Label>
-                  <Input
-                    id="eventDescription"
-                    placeholder="Add some details about this special moment..."
-                    value={newEvent.description}
-                    onChange={(e) => setNewEvent((prev) => ({ ...prev, description: e.target.value }))}
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <Button onClick={addEvent} disabled={!newEvent.title.trim() || !newEvent.date}>
-                    Add Memory
-                  </Button>
-                  <Button variant="outline" onClick={() => setIsAdding(false)}>
-                    Cancel
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {events.length === 0 ? (
-            <div className="text-center py-8">
-              <Calendar className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-              <p className="text-muted-foreground">No memories added yet. Start building your timeline!</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg">Your Love Story ({events.length} memories)</h3>
-              <AnimatePresence>
-                {events.map((event, index) => {
-                  const typeInfo = getEventTypeInfo(event.type)
-                  const Icon = typeInfo.icon
-
-                  return (
-                    <motion.div
-                      key={event.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ delay: index * 0.1 }}
-                    >
-                      <Card className="relative">
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-4">
-                            <div className={`p-2 rounded-full ${typeInfo.color} text-white flex-shrink-0`}>
-                              <Icon className="h-4 w-4" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-2">
-                                <div>
-                                  <h4 className="font-semibold text-lg">{event.title}</h4>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <Badge variant="outline">{typeInfo.label}</Badge>
-                                    <span className="text-sm text-muted-foreground">{formatDate(event.date)}</span>
-                                    <span className="text-xs text-muted-foreground">({getDaysAgo(event.date)})</span>
-                                  </div>
-                                  {event.description && (
-                                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">{event.description}</p>
-                                  )}
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => removeEvent(event.id)}
-                                  className="text-red-500 hover:text-red-600"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  )
-                })}
-              </AnimatePresence>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+              ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }

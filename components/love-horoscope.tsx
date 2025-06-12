@@ -3,203 +3,96 @@
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Stars, RefreshCw } from "lucide-react"
-import { motion } from "framer-motion"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 const zodiacSigns = [
-  { name: "Aries", dates: "Mar 21 - Apr 19", emoji: "♈" },
-  { name: "Taurus", dates: "Apr 20 - May 20", emoji: "♉" },
-  { name: "Gemini", dates: "May 21 - Jun 20", emoji: "♊" },
-  { name: "Cancer", dates: "Jun 21 - Jul 22", emoji: "♋" },
-  { name: "Leo", dates: "Jul 23 - Aug 22", emoji: "♌" },
-  { name: "Virgo", dates: "Aug 23 - Sep 22", emoji: "♍" },
-  { name: "Libra", dates: "Sep 23 - Oct 22", emoji: "♎" },
-  { name: "Scorpio", dates: "Oct 23 - Nov 21", emoji: "♏" },
-  { name: "Sagittarius", dates: "Nov 22 - Dec 21", emoji: "♐" },
-  { name: "Capricorn", dates: "Dec 22 - Jan 19", emoji: "♑" },
-  { name: "Aquarius", dates: "Jan 20 - Feb 18", emoji: "♒" },
-  { name: "Pisces", dates: "Feb 19 - Mar 20", emoji: "♓" },
+  { name: "Aries", dates: "Mar 21 - Apr 19", emoji: "♈", element: "Fire" },
+  { name: "Taurus", dates: "Apr 20 - May 20", emoji: "♉", element: "Earth" },
+  { name: "Gemini", dates: "May 21 - Jun 20", emoji: "♊", element: "Air" },
+  { name: "Cancer", dates: "Jun 21 - Jul 22", emoji: "♋", element: "Water" },
+  { name: "Leo", dates: "Jul 23 - Aug 22", emoji: "♌", element: "Fire" },
+  { name: "Virgo", dates: "Aug 23 - Sep 22", emoji: "♍", element: "Earth" },
+  { name: "Libra", dates: "Sep 23 - Oct 22", emoji: "♎", element: "Air" },
+  { name: "Scorpio", dates: "Oct 23 - Nov 21", emoji: "♏", element: "Water" },
+  { name: "Sagittarius", dates: "Nov 22 - Dec 21", emoji: "♐", element: "Fire" },
+  { name: "Capricorn", dates: "Dec 22 - Jan 19", emoji: "♑", element: "Earth" },
+  { name: "Aquarius", dates: "Jan 20 - Feb 18", emoji: "♒", element: "Air" },
+  { name: "Pisces", dates: "Feb 19 - Mar 20", emoji: "♓", element: "Water" },
 ]
 
 const horoscopes = {
-  Aries: [
-    "Your passionate nature will attract someone special today. Be bold in love!",
-    "A surprise romantic gesture from your partner will brighten your day.",
-    "Single? Your confidence will be magnetic to potential partners.",
-    "Communication is key in your relationship today. Express your feelings openly.",
-  ],
-  Taurus: [
-    "Stability in love brings you comfort today. Enjoy quiet moments together.",
-    "Your loyalty will be deeply appreciated by your loved one.",
-    "A romantic dinner or cozy evening will strengthen your bond.",
-    "Trust your instincts when it comes to matters of the heart.",
-  ],
-  Gemini: [
-    "Your charm and wit will captivate someone new today.",
-    "Variety in your romantic life brings excitement and joy.",
-    "A meaningful conversation will deepen your connection.",
-    "Your adaptability helps you navigate relationship challenges smoothly.",
-  ],
-  Cancer: [
-    "Your nurturing nature creates a safe space for love to flourish.",
-    "Family and relationship harmony are highlighted today.",
-    "Emotional intimacy reaches new depths with your partner.",
-    "Your intuition guides you toward the right romantic decisions.",
-  ],
-  Leo: [
-    "Your radiant energy attracts admiration and romantic attention.",
-    "Grand romantic gestures will be well-received today.",
-    "Your generous heart wins over someone special.",
-    "Confidence in love leads to beautiful new beginnings.",
-  ],
-  Virgo: [
-    "Attention to detail in your relationship shows how much you care.",
-    "Practical acts of love speak louder than words today.",
-    "Your partner appreciates your thoughtful and caring nature.",
-    "Small gestures create big romantic moments.",
-  ],
-  Libra: [
-    "Balance and harmony in your relationship bring peace and joy.",
-    "Your diplomatic nature helps resolve any romantic tensions.",
-    "Beauty and romance surround you in unexpected ways.",
-    "Partnership energy is strong - make important decisions together.",
-  ],
-  Scorpio: [
-    "Intense emotions lead to passionate romantic connections.",
-    "Your mysterious allure draws someone closer to you.",
-    "Deep conversations reveal hidden aspects of your relationship.",
-    "Transformation in love brings positive changes.",
-  ],
-  Sagittarius: [
-    "Adventure and spontaneity add excitement to your love life.",
-    "Your optimistic outlook brightens your partner's day.",
-    "Travel or new experiences with your loved one create lasting memories.",
-    "Freedom within commitment brings relationship satisfaction.",
-  ],
-  Capricorn: [
-    "Your commitment and reliability strengthen your romantic bond.",
-    "Long-term relationship goals come into focus today.",
-    "Your practical approach to love yields lasting results.",
-    "Patience in matters of the heart will be rewarded.",
-  ],
-  Aquarius: [
-    "Your unique perspective on love attracts like-minded souls.",
-    "Friendship forms the foundation of your romantic connections.",
-    "Unconventional expressions of love surprise and delight.",
-    "Your independence within relationships creates healthy balance.",
-  ],
-  Pisces: [
-    "Your romantic and dreamy nature creates magical moments.",
-    "Intuitive understanding with your partner reaches new levels.",
-    "Creative expressions of love touch hearts deeply.",
-    "Compassion and empathy strengthen your emotional bonds.",
-  ],
+  Aries:
+    "Today is perfect for new romantic beginnings. Your confidence is magnetic, drawing others to you. If you're in a relationship, plan something spontaneous to reignite the spark.",
+  Taurus:
+    "Stability in love is highlighted today. Show your partner how much you value them through small, thoughtful gestures. Single? Someone reliable may catch your eye.",
+  Gemini:
+    "Communication is your love language today. Express your feelings openly and listen attentively to your partner. Singles might find connection through intellectual conversations.",
+  Cancer:
+    "Your emotional intuition is heightened today. Trust your feelings about a relationship matter. Creating a cozy, intimate atmosphere will strengthen bonds with your loved one.",
+  Leo: "Romance is in the spotlight! Your generous heart and warm personality shine bright today. Plan a grand gesture for your partner or confidently approach someone who's caught your interest.",
+  Virgo:
+    "Details matter in love today. Notice the little things your partner does and express appreciation. Single Virgos might find love through practical, everyday interactions.",
+  Libra:
+    "Harmony in relationships is your focus. Find balance between giving and receiving in love. Your charm is especially potent today—use it wisely!",
+  Scorpio:
+    "Passion runs deep today. Intense emotional connections are favored. Trust issues may surface, but addressing them honestly will strengthen your relationship.",
+  Sagittarius:
+    "Adventure in love awaits! Break routine with your partner or be open to meeting someone who expands your horizons. Freedom and connection can coexist beautifully today.",
+  Capricorn:
+    "Long-term love prospects look promising. Invest time in building a solid foundation with your partner. Single? Someone with ambition and integrity may enter your life.",
+  Aquarius:
+    "Unexpected romantic developments bring excitement today. Embrace unconventional approaches to love. Your uniqueness is especially attractive now.",
+  Pisces:
+    "Dreamy romance fills your day. Your compassion and empathy create deep connections. Trust your intuition about a relationship matter—it's guiding you correctly.",
 }
 
 export default function LoveHoroscope() {
-  const [selectedSign, setSelectedSign] = useState<string>("")
-  const [currentHoroscope, setCurrentHoroscope] = useState<string>("")
-  const [isLoading, setIsLoading] = useState(false)
-
-  const generateHoroscope = () => {
-    if (!selectedSign) return
-
-    setIsLoading(true)
-    setTimeout(() => {
-      const signHoroscopes = horoscopes[selectedSign as keyof typeof horoscopes]
-      const randomHoroscope = signHoroscopes[Math.floor(Math.random() * signHoroscopes.length)]
-      setCurrentHoroscope(randomHoroscope)
-      setIsLoading(false)
-    }, 1000)
-  }
-
-  const selectedZodiac = zodiacSigns.find((sign) => sign.name === selectedSign)
+  const [selectedSign, setSelectedSign] = useState("Aries")
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Stars className="h-5 w-5 text-purple-500" />
-            Daily Love Horoscope
-          </CardTitle>
-          <CardDescription>Discover what the stars have in store for your love life today</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Select Your Zodiac Sign</label>
-            <Select value={selectedSign} onValueChange={setSelectedSign}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose your zodiac sign" />
-              </SelectTrigger>
-              <SelectContent>
-                {zodiacSigns.map((sign) => (
-                  <SelectItem key={sign.name} value={sign.name}>
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{sign.emoji}</span>
-                      <div>
-                        <div className="font-medium">{sign.name}</div>
-                        <div className="text-xs text-muted-foreground">{sign.dates}</div>
-                      </div>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-center text-2xl text-pink-600 dark:text-pink-400">Daily Love Horoscope</CardTitle>
+        <CardDescription className="text-center">Select your zodiac sign to see today's love forecast</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="Aries" onValueChange={setSelectedSign} className="w-full">
+          <TabsList className="grid grid-cols-4 md:grid-cols-6 mb-4">
+            {zodiacSigns.map((sign) => (
+              <TabsTrigger key={sign.name} value={sign.name} className="text-center">
+                <span className="hidden md:inline">{sign.name}</span>
+                <span className="md:hidden">{sign.emoji}</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-          {selectedZodiac && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2"
-            >
-              <Badge variant="outline" className="text-lg px-3 py-1">
-                {selectedZodiac.emoji} {selectedZodiac.name}
-              </Badge>
-              <span className="text-sm text-muted-foreground">{selectedZodiac.dates}</span>
-            </motion.div>
-          )}
+          {zodiacSigns.map((sign) => (
+            <TabsContent key={sign.name} value={sign.name} className="space-y-4">
+              <div className="text-center mb-4">
+                <div className="text-4xl mb-2">{sign.emoji}</div>
+                <h3 className="text-xl font-bold">{sign.name}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{sign.dates}</p>
+                <div className="mt-1">
+                  <span className="inline-flex items-center rounded-full bg-pink-100 px-2.5 py-0.5 text-xs font-medium text-pink-800 dark:bg-pink-900 dark:text-pink-200">
+                    {sign.element} Sign
+                  </span>
+                </div>
+              </div>
 
-          <Button
-            onClick={generateHoroscope}
-            disabled={!selectedSign || isLoading}
-            className="w-full bg-purple-600 hover:bg-purple-700"
-          >
-            {isLoading ? (
-              <span className="flex items-center gap-2">
-                <RefreshCw className="h-4 w-4 animate-spin" />
-                Reading the Stars...
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                <Stars className="h-4 w-4" />
-                Get My Love Horoscope
-              </span>
-            )}
-          </Button>
+              <div className="bg-pink-50 dark:bg-pink-900/20 p-4 rounded-lg">
+                <p className="italic text-gray-700 dark:text-gray-300">{horoscopes[sign.name]}</p>
+              </div>
 
-          {currentHoroscope && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-              <Card className="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="text-2xl">{selectedZodiac?.emoji}</div>
-                    <div>
-                      <h4 className="font-semibold text-purple-700 dark:text-purple-300 mb-2">
-                        Today's Love Forecast for {selectedSign}
-                      </h4>
-                      <p className="text-gray-700 dark:text-gray-300">{currentHoroscope}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+              <div className="flex justify-center mt-4">
+                <Button variant="outline" className="mr-2">
+                  Share Horoscope
+                </Button>
+                <Button>Get Compatibility</Button>
+              </div>
+            </TabsContent>
+          ))}
+        </Tabs>
+      </CardContent>
+    </Card>
   )
 }
