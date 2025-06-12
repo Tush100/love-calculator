@@ -1,11 +1,25 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Music, List, X, Heart } from "lucide-react"
+import {
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  Volume2,
+  VolumeX,
+  Music,
+  List,
+  X,
+  Heart,
+  Upload,
+  AlertCircle,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Card, CardContent } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { motion, AnimatePresence } from "framer-motion"
 
 interface Song {
@@ -14,57 +28,64 @@ interface Song {
   artist: string
   duration: string
   url: string
+  fallbackUrl?: string
 }
 
-// Only your 6 uploaded songs
+// Updated playlist with deployment-friendly URLs
 const romanticPlaylist: Song[] = [
   {
     id: 1,
     title: "Perfect",
     artist: "Ed Sheeran",
     duration: "4:23",
-    url: "/audio/perfect-ed-sheeran.mp3",
+    url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Perfect%20-%20Ed%20Sheeran-xpN2tm7bERPv0LH5FOuMJBKzbN9W03.mp3", // Direct blob URL
+    fallbackUrl: "/audio/perfect-ed-sheeran.mp3",
   },
   {
     id: 2,
     title: "All of Me",
     artist: "John Legend",
     duration: "4:29",
-    url: "/audio/john-legend-all-of-me.mp3",
+    url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/John_Legend_-_All_of_Me_Yingamedia.com_.ng_-ooHD71ENdPR8R2PHLo6hmxuqoN44TF.mp3", // Direct blob URL
+    fallbackUrl: "/audio/john-legend-all-of-me.mp3",
   },
   {
     id: 3,
     title: "Make You Feel My Love",
     artist: "Adele",
     duration: "3:32",
-    url: "/audio/adele-make-you-feel-my-love.mp3",
+    url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Adele_-_Make_You_Feel_My_Love-sHVjqgsdfIpWu5HeCDW8perc4u03r1.mp3", // Direct blob URL
+    fallbackUrl: "/audio/adele-make-you-feel-my-love.mp3",
   },
   {
     id: 4,
     title: "Unity",
     artist: "Sapphire",
     duration: "3:45",
-    url: "/audio/sapphire-unity-acoustic.mp3",
+    url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Sapphire_-_Unity_Acoustic_-3HL2edavSJS9s2OLAvOVtrZNQQSgs6.mp3", // Direct blob URL
+    fallbackUrl: "/audio/sapphire-unity-acoustic.mp3",
   },
   {
     id: 5,
     title: "Leave The Door Open",
     artist: "Bruno Mars",
     duration: "4:02",
-    url: "/audio/leave-the-door-open-bruno-mars.mp3",
+    url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Leave%20The%20Door%20Open%20-%20Bruno%20Mars-mRTW1h0JqL69WWZJQ7A5WQhSTECR7d.mp3", // Direct blob URL
+    fallbackUrl: "/audio/leave-the-door-open-bruno-mars.mp3",
   },
   {
     id: 6,
     title: "We Found Love",
     artist: "Rihanna ft. Calvin Harris",
     duration: "3:35",
-    url: "/audio/we-found-love-rihanna.mp3",
+    url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Rihanna%20-%20We%20Found%20Love%20ft.%20Calvin%20Harris%20%281%29-yQHfAvL4H0FakIY61IVDNGnolAZBuY.mp3", // Direct blob URL
+    fallbackUrl: "/audio/we-found-love-rihanna.mp3",
   },
 ]
 
 export function MusicPlayer() {
   const [isPlaying, setIsPlaying] = useState(false)
-  const [currentSong, setCurrentSong] = useState(0) // Default to Perfect by Ed Sheeran
+  const [currentSong, setCurrentSong] = useState(0)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [volume, setVolume] = useState(0.7)
@@ -73,15 +94,17 @@ export function MusicPlayer() {
   const [isMinimized, setIsMinimized] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [audioError, setAudioError] = useState(false)
+  const [currentUrl, setCurrentUrl] = useState(romanticPlaylist[0].url)
+  const [showUploadHelp, setShowUploadHelp] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
 
-  // Auto-play Perfect by Ed Sheeran when component mounts
+  // Try to auto-play Perfect by Ed Sheeran when component mounts
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (audioRef.current && !isPlaying) {
+      if (audioRef.current && !isPlaying && !audioError) {
         togglePlay()
       }
-    }, 2000) // Start playing after 2 seconds
+    }, 3000) // Start playing after 3 seconds
 
     return () => clearTimeout(timer)
   }, [])
@@ -89,6 +112,9 @@ export function MusicPlayer() {
   useEffect(() => {
     const audio = audioRef.current
     if (!audio) return
+
+    const currentSongData = romanticPlaylist[currentSong]
+    setCurrentUrl(currentSongData.url)
 
     const handleTimeUpdate = () => {
       if (audio.currentTime) {
@@ -119,8 +145,18 @@ export function MusicPlayer() {
       nextSong()
     }
 
-    const handleError = (e: Event) => {
-      console.error("Audio error for song:", romanticPlaylist[currentSong].title, e)
+    const handleError = async (e: Event) => {
+      console.error("Audio error for song:", currentSongData.title, e)
+
+      // Try fallback URL if available
+      if (currentSongData.fallbackUrl && currentUrl === currentSongData.url) {
+        console.log("Trying fallback URL for:", currentSongData.title)
+        setCurrentUrl(currentSongData.fallbackUrl)
+        audio.src = currentSongData.fallbackUrl
+        audio.load()
+        return
+      }
+
       setIsLoading(false)
       setAudioError(true)
     }
@@ -150,7 +186,8 @@ export function MusicPlayer() {
     audio.addEventListener("waiting", handleWaiting)
     audio.addEventListener("playing", handlePlaying)
 
-    // Force load the audio
+    // Set the audio source and load
+    audio.src = currentUrl
     audio.load()
 
     return () => {
@@ -164,7 +201,7 @@ export function MusicPlayer() {
       audio.removeEventListener("waiting", handleWaiting)
       audio.removeEventListener("playing", handlePlaying)
     }
-  }, [currentSong])
+  }, [currentSong, currentUrl])
 
   useEffect(() => {
     if (audioRef.current) {
@@ -188,7 +225,7 @@ export function MusicPlayer() {
           await new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
               reject(new Error("Audio loading timeout"))
-            }, 10000) // 10 second timeout
+            }, 15000) // 15 second timeout
 
             const handleCanPlay = () => {
               clearTimeout(timeout)
@@ -266,14 +303,7 @@ export function MusicPlayer() {
 
   return (
     <>
-      <audio
-        ref={audioRef}
-        src={currentSongData.url}
-        preload="auto"
-        crossOrigin="anonymous"
-        playsInline
-        controls={false}
-      />
+      <audio ref={audioRef} preload="auto" crossOrigin="anonymous" playsInline controls={false} />
 
       <motion.div
         className="fixed bottom-4 left-4 z-40"
@@ -301,7 +331,7 @@ export function MusicPlayer() {
                         <p className="font-semibold text-sm truncate">{currentSongData.title}</p>
                         <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{currentSongData.artist}</p>
                         {isLoading && <p className="text-xs text-blue-500">Loading...</p>}
-                        {audioError && <p className="text-xs text-red-500">Audio error - trying next song...</p>}
+                        {audioError && <p className="text-xs text-red-500">Audio unavailable</p>}
                       </div>
                     </div>
                     <Button variant="ghost" size="icon" onClick={() => setIsMinimized(true)} className="h-8 w-8">
@@ -363,26 +393,52 @@ export function MusicPlayer() {
                         className="w-20"
                       />
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => setShowPlaylist(true)} className="h-8 w-8">
-                      <List className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="icon" onClick={() => setShowPlaylist(true)} className="h-8 w-8">
+                        <List className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setShowUploadHelp(true)}
+                        className="h-8 w-8"
+                        title="Upload Music Help"
+                      >
+                        <Upload className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
 
                   {audioError && (
-                    <div className="mt-3 text-xs text-center">
-                      <p className="text-red-500 mb-1">Audio playback issue detected</p>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setAudioError(false)
-                          nextSong()
-                        }}
-                        className="text-xs"
-                      >
-                        Try Next Song
-                      </Button>
-                    </div>
+                    <Alert className="mt-3">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription className="text-xs">
+                        <div className="space-y-2">
+                          <p>Music files need to be uploaded to your Vercel deployment.</p>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setAudioError(false)
+                                nextSong()
+                              }}
+                              className="text-xs"
+                            >
+                              Try Next Song
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setShowUploadHelp(true)}
+                              className="text-xs"
+                            >
+                              Upload Help
+                            </Button>
+                          </div>
+                        </div>
+                      </AlertDescription>
+                    </Alert>
                   )}
                 </motion.div>
               ) : (
@@ -420,6 +476,7 @@ export function MusicPlayer() {
         </Card>
       </motion.div>
 
+      {/* Playlist Modal */}
       <AnimatePresence>
         {showPlaylist && (
           <motion.div
@@ -483,6 +540,90 @@ export function MusicPlayer() {
                       ))}
                     </div>
                   </ScrollArea>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Upload Help Modal */}
+      <AnimatePresence>
+        {showUploadHelp && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowUploadHelp(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg"
+            >
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <Upload className="h-5 w-5 text-pink-500" />
+                      How to Add Music to Your Website
+                    </h3>
+                    <Button variant="ghost" size="icon" onClick={() => setShowUploadHelp(false)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <div className="space-y-4 text-sm">
+                    <div>
+                      <h4 className="font-medium mb-2">📁 Step 1: Create Audio Folder</h4>
+                      <p className="text-gray-600">
+                        Create a folder called <code className="bg-gray-100 px-1 rounded">public/audio</code> in your
+                        project root.
+                      </p>
+                    </div>
+
+                    <div>
+                      <h4 className="font-medium mb-2">🎵 Step 2: Add Your Music Files</h4>
+                      <p className="text-gray-600">Upload your MP3 files with these exact names:</p>
+                      <ul className="list-disc list-inside mt-2 space-y-1 text-xs">
+                        <li>
+                          <code>perfect-ed-sheeran.mp3</code>
+                        </li>
+                        <li>
+                          <code>john-legend-all-of-me.mp3</code>
+                        </li>
+                        <li>
+                          <code>adele-make-you-feel-my-love.mp3</code>
+                        </li>
+                        <li>
+                          <code>sapphire-unity-acoustic.mp3</code>
+                        </li>
+                        <li>
+                          <code>leave-the-door-open-bruno-mars.mp3</code>
+                        </li>
+                        <li>
+                          <code>we-found-love-rihanna.mp3</code>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h4 className="font-medium mb-2">🚀 Step 3: Deploy</h4>
+                      <p className="text-gray-600">
+                        Push your changes to GitHub and Vercel will automatically redeploy with the music files.
+                      </p>
+                    </div>
+
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription className="text-xs">
+                        The music player will automatically detect and play your uploaded files once they're deployed.
+                      </AlertDescription>
+                    </Alert>
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
