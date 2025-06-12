@@ -16,6 +16,7 @@ interface Song {
   url: string
 }
 
+// Only your 6 uploaded songs
 const romanticPlaylist: Song[] = [
   {
     id: 1,
@@ -40,24 +41,24 @@ const romanticPlaylist: Song[] = [
   },
   {
     id: 4,
-    title: "Thinking Out Loud",
-    artist: "Ed Sheeran",
-    duration: "4:41",
-    url: "/audio/perfect-ed-sheeran.mp3", // Using Perfect as placeholder
+    title: "Unity",
+    artist: "Sapphire",
+    duration: "3:45",
+    url: "/audio/sapphire-unity-acoustic.mp3",
   },
   {
     id: 5,
-    title: "A Thousand Years",
-    artist: "Christina Perri",
-    duration: "4:45",
-    url: "/audio/john-legend-all-of-me.mp3", // Using All of Me as placeholder
+    title: "Leave The Door Open",
+    artist: "Bruno Mars",
+    duration: "4:02",
+    url: "/audio/leave-the-door-open-bruno-mars.mp3",
   },
   {
     id: 6,
-    title: "At Last",
-    artist: "Etta James",
-    duration: "3:01",
-    url: "/audio/adele-make-you-feel-my-love.mp3", // Using Adele as placeholder
+    title: "We Found Love",
+    artist: "Rihanna ft. Calvin Harris",
+    duration: "3:35",
+    url: "/audio/we-found-love-rihanna.mp3",
   },
 ]
 
@@ -74,6 +75,17 @@ export function MusicPlayer() {
   const [audioError, setAudioError] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
 
+  // Auto-play Perfect by Ed Sheeran when component mounts
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (audioRef.current && !isPlaying) {
+        togglePlay()
+      }
+    }, 2000) // Start playing after 2 seconds
+
+    return () => clearTimeout(timer)
+  }, [])
+
   useEffect(() => {
     const audio = audioRef.current
     if (!audio) return
@@ -85,7 +97,7 @@ export function MusicPlayer() {
     }
 
     const handleLoadedMetadata = () => {
-      if (audio.duration) {
+      if (audio.duration && !isNaN(audio.duration)) {
         setDuration(audio.duration)
       }
       setIsLoading(false)
@@ -108,12 +120,21 @@ export function MusicPlayer() {
     }
 
     const handleError = (e: Event) => {
-      console.error("Audio error:", e)
+      console.error("Audio error for song:", romanticPlaylist[currentSong].title, e)
       setIsLoading(false)
       setAudioError(true)
     }
 
     const handleLoadedData = () => {
+      setIsLoading(false)
+      setAudioError(false)
+    }
+
+    const handleWaiting = () => {
+      setIsLoading(true)
+    }
+
+    const handlePlaying = () => {
       setIsLoading(false)
       setAudioError(false)
     }
@@ -126,8 +147,10 @@ export function MusicPlayer() {
     audio.addEventListener("ended", handleEnded)
     audio.addEventListener("error", handleError)
     audio.addEventListener("loadeddata", handleLoadedData)
+    audio.addEventListener("waiting", handleWaiting)
+    audio.addEventListener("playing", handlePlaying)
 
-    // Load the audio
+    // Force load the audio
     audio.load()
 
     return () => {
@@ -138,6 +161,8 @@ export function MusicPlayer() {
       audio.removeEventListener("ended", handleEnded)
       audio.removeEventListener("error", handleError)
       audio.removeEventListener("loadeddata", handleLoadedData)
+      audio.removeEventListener("waiting", handleWaiting)
+      audio.removeEventListener("playing", handlePlaying)
     }
   }, [currentSong])
 
@@ -149,36 +174,54 @@ export function MusicPlayer() {
 
   const togglePlay = async () => {
     const audio = audioRef.current
-    if (!audio || isLoading || audioError) return
+    if (!audio) return
 
     try {
       if (isPlaying) {
         audio.pause()
         setIsPlaying(false)
       } else {
-        // Ensure audio is loaded before playing
+        setIsLoading(true)
+
+        // Ensure audio is ready
         if (audio.readyState < 2) {
-          setIsLoading(true)
-          await new Promise((resolve) => {
+          await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              reject(new Error("Audio loading timeout"))
+            }, 10000) // 10 second timeout
+
             const handleCanPlay = () => {
+              clearTimeout(timeout)
               audio.removeEventListener("canplay", handleCanPlay)
+              audio.removeEventListener("error", handleError)
               resolve(void 0)
             }
+
+            const handleError = () => {
+              clearTimeout(timeout)
+              audio.removeEventListener("canplay", handleCanPlay)
+              audio.removeEventListener("error", handleError)
+              reject(new Error("Audio loading error"))
+            }
+
             audio.addEventListener("canplay", handleCanPlay)
+            audio.addEventListener("error", handleError)
           })
-          setIsLoading(false)
         }
 
         const playPromise = audio.play()
         if (playPromise !== undefined) {
           await playPromise
           setIsPlaying(true)
+          setAudioError(false)
         }
+        setIsLoading(false)
       }
     } catch (error) {
-      console.error("Playback error:", error)
+      console.error("Playback error for song:", romanticPlaylist[currentSong].title, error)
       setAudioError(true)
       setIsLoading(false)
+      setIsPlaying(false)
     }
   }
 
@@ -186,12 +229,14 @@ export function MusicPlayer() {
     setCurrentSong((prev) => (prev + 1) % romanticPlaylist.length)
     setIsPlaying(false)
     setCurrentTime(0)
+    setAudioError(false)
   }
 
   const prevSong = () => {
     setCurrentSong((prev) => (prev - 1 + romanticPlaylist.length) % romanticPlaylist.length)
     setIsPlaying(false)
     setCurrentTime(0)
+    setAudioError(false)
   }
 
   const selectSong = (index: number) => {
@@ -199,6 +244,7 @@ export function MusicPlayer() {
     setShowPlaylist(false)
     setIsPlaying(false)
     setCurrentTime(0)
+    setAudioError(false)
   }
 
   const handleSeek = (value: number[]) => {
@@ -220,7 +266,14 @@ export function MusicPlayer() {
 
   return (
     <>
-      <audio ref={audioRef} src={currentSongData.url} preload="auto" crossOrigin="anonymous" playsInline />
+      <audio
+        ref={audioRef}
+        src={currentSongData.url}
+        preload="auto"
+        crossOrigin="anonymous"
+        playsInline
+        controls={false}
+      />
 
       <motion.div
         className="fixed bottom-4 left-4 z-40"
@@ -248,7 +301,7 @@ export function MusicPlayer() {
                         <p className="font-semibold text-sm truncate">{currentSongData.title}</p>
                         <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{currentSongData.artist}</p>
                         {isLoading && <p className="text-xs text-blue-500">Loading...</p>}
-                        {audioError && <p className="text-xs text-red-500">Audio unavailable</p>}
+                        {audioError && <p className="text-xs text-red-500">Audio error - trying next song...</p>}
                       </div>
                     </div>
                     <Button variant="ghost" size="icon" onClick={() => setIsMinimized(true)} className="h-8 w-8">
@@ -277,7 +330,7 @@ export function MusicPlayer() {
                     </Button>
                     <Button
                       onClick={togglePlay}
-                      disabled={isLoading || audioError}
+                      disabled={isLoading}
                       className="h-12 w-12 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white shadow-lg disabled:opacity-50"
                     >
                       {isLoading ? (
@@ -316,8 +369,19 @@ export function MusicPlayer() {
                   </div>
 
                   {audioError && (
-                    <div className="mt-3 text-xs text-center text-gray-500">
-                      💕 Enjoy the romantic atmosphere while we work on the music!
+                    <div className="mt-3 text-xs text-center">
+                      <p className="text-red-500 mb-1">Audio playback issue detected</p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setAudioError(false)
+                          nextSong()
+                        }}
+                        className="text-xs"
+                      >
+                        Try Next Song
+                      </Button>
                     </div>
                   )}
                 </motion.div>
@@ -335,7 +399,7 @@ export function MusicPlayer() {
                       e.stopPropagation()
                       togglePlay()
                     }}
-                    disabled={isLoading || audioError}
+                    disabled={isLoading}
                     className="h-10 w-10 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white disabled:opacity-50"
                   >
                     {isLoading ? (
@@ -378,7 +442,7 @@ export function MusicPlayer() {
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold flex items-center gap-2">
                         <Heart className="h-5 w-5" />
-                        Romantic Playlist
+                        Romantic Playlist ({romanticPlaylist.length} songs)
                       </h3>
                       <Button
                         variant="ghost"
